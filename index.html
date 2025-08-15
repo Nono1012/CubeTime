@@ -1,0 +1,238 @@
+<!DOCTYPE html><html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CubeTimer+ Trainer</title><meta name="theme-color" content="#0b0d12">
+<style>
+:root{--bg:#0b0d12;--card:#151922;--ink:#e9eef8;--muted:#98a2b3;--acc:#7c4dff;--ok:#22c55e;--bad:#ef4444;}
+.theme-night{--bg:#0b0d12;--card:#151922;--ink:#e9eef8;--muted:#98a2b3;--acc:#7c4dff}
+.theme-default{}
+.theme-aqua{--bg:#041418;--card:#0c2a31;--ink:#e7fbff;--muted:#9bd0da;--acc:#12b0e8}
+.theme-solar{--bg:#0d0c07;--card:#1b1a0d;--ink:#fff8e1;--muted:#dac78f;--acc:#ffb300}
+.theme-neon{--bg:#0a0a0a;--card:#121212;--ink:#f0f0f0;--muted:#9e9e9e;--acc:#00e5ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.35 -apple-system,Inter,Segoe UI,Roboto,Arial}
+.wrap{max-width:1000px;margin:0 auto;padding:16px;display:grid;gap:12px}
+header{display:flex;gap:10px;align-items:center;justify-content:space-between}
+h1{font-size:20px;margin:0}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+select,input,button,textarea{background:var(--card);color:var(--ink);border:1px solid #262b37;border-radius:10px;padding:10px}
+button{cursor:pointer}.card{background:var(--card);border-radius:16px;padding:12px}
+.badge{padding:2px 8px;border-radius:999px;background:#1e2330;border:1px solid #2a3142;font-size:12px}
+.nav{display:flex;gap:8px}.tab{padding:8px 12px;border:1px solid #2a2f3d;border-radius:10px}
+.tab.active{outline:2px solid var(--acc)}
+.timer{font-size:84px;text-align:center;padding:16px 8px;border:1px solid #222;border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.02),transparent)}
+.controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0}
+.controls .ok{border-color:#204a2b;background:#163422}.controls .bad{border-color:#4a2020;background:#341616}
+.scramble{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:16px;display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:6px 10px;border-radius:10px;background:#1e2230;border:1px solid #2a3040}
+canvas{width:100%;height:auto;background:#0e121a;border-radius:12px;border:1px solid #1f2533}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media (max-width:860px){.grid{grid-template-columns:1fr}}
+.times{max-height:340px;overflow:auto}.times table{width:100%;border-collapse:collapse}
+.times th,.times td{padding:8px;border-bottom:1px solid #222}.right{text-align:right}.muted{color:var(--muted)}.note{font-size:12px;opacity:.9}
+.pill{display:inline-flex;gap:8px;padding:6px 10px;border-radius:999px;background:#111622;border:1px solid #242b3b}
+.list{display:grid;gap:8px}.alg{display:grid;grid-template-columns:1fr auto;gap:6px;border:1px solid #2a3040;padding:10px;border-radius:12px}
+.alg .meta{font-size:12px;color:var(--muted)}
+.kbd{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+</style></head><body class="theme-night"><div class="wrap">
+<header>
+  <h1>CubeTimer+ <span class="badge" id="badgePuzzle">3×3</span></h1>
+  <div class="row">
+    <select id="profileSelect"></select>
+    <button id="btnNewProfile">Nouveau profil</button>
+    <div class="nav">
+      <button class="tab active" data-tab="timerTab">Timer</button>
+      <button class="tab" data-tab="trainerTab">Trainer</button>
+    </div>
+    <button id="btnExport">Export</button>
+    <input id="importFile" type="file" accept="application/json" style="display:none">
+    <button id="btnImport">Import</button>
+  </div>
+</header>
+
+<!-- TIMER -->
+<section id="timerTab" class="card">
+  <div class="grid">
+    <div>
+      <div class="timer" id="timer">0.000</div>
+      <div class="controls">
+        <button id="startStop">Start / Stop (tap ou Espace)</button>
+        <button id="btnDNF" class="bad">DNF</button>
+        <button id="btnPlus2" class="pill">+2</button>
+        <button id="btnReset">Reset</button>
+      </div>
+      <div class="scramble" id="scrambleView"></div>
+      <div class="row" style="margin-top:8px">
+        <select id="puzzleSelect"></select>
+        <select id="themeSelect">
+          <option value="theme-night">Night</option>
+          <option value="theme-default">Default</option>
+          <option value="theme-aqua">Aqua</option>
+          <option value="theme-solar">Solar</option>
+          <option value="theme-neon">Neon</option>
+        </select>
+        <button id="btnNewScramble">Nouveau mélange</button>
+        <span class="muted note">Aperçu exact: 2×2 & 3×3</span>
+      </div>
+      <div class="card" style="margin-top:10px"><canvas id="preview" width="640" height="380"></canvas></div>
+      <div class="row" style="margin-top:8px">
+        <span class="badge">AO5: <b id="ao5">—</b></span>
+        <span class="badge">AO12: <b id="ao12">—</b></span>
+      </div>
+    </div>
+    <div>
+      <div class="card times">
+        <table id="timesTable"><thead><tr><th>#</th><th>Temps</th><th>Scramble</th><th class="right">Actions</th></tr></thead><tbody></tbody></table>
+      </div>
+    </div>
+  </div>
+  <div class="note muted">Tap écran/Espace: start/stop. ⌫ supprime le dernier temps. Données en local (export/import possible).</div>
+</section>
+
+<!-- TRAINER -->
+<section id="trainerTab" class="card" style="display:none">
+  <div class="row" style="justify-content:space-between;align-items:flex-end">
+    <div>
+      <h3 style="margin:0 0 6px 0">Trainer d’algorithmes (par profil)</h3>
+      <div class="muted">Puzzle du profil: <span id="trainerPuzzleLabel">3×3</span></div>
+    </div>
+    <div class="row">
+      <button id="btnPractice">Practice aléatoire</button>
+    </div>
+  </div>
+
+  <div class="card" style="margin:10px 0">
+    <div class="row" style="flex-wrap:wrap">
+      <input id="algName" placeholder="Nom du cas (ex: CLL T-Case)">
+      <input id="algMoves" class="kbd" placeholder="Algorithme (moves)">
+      <input id="algScramble" class="kbd" placeholder="Scramble (optionnel, sinon inverse(algo))">
+      <button id="btnAddAlg">Ajouter</button>
+    </div>
+    <div class="note muted" style="margin-top:6px">
+      Astuce: laisse “Scramble” vide → le trainer génère automatiquement <span class="kbd">inverse(algo)</span> pour créer le cas.
+    </div>
+  </div>
+
+  <div class="list" id="algList"></div>
+
+  <div class="card" id="practiceCard" style="display:none;margin-top:12px">
+    <div class="row" style="justify-content:space-between">
+      <div>
+        <div id="prTitle" style="font-weight:600"></div>
+        <div class="scramble" id="prScramble"></div>
+      </div>
+      <div class="row">
+        <button id="btnReveal">Révéler l’algo</button>
+        <button id="btnSuccess" class="ok">Success</button>
+        <button id="btnFail" class="bad">Fail</button>
+        <button id="btnNext">Suivant</button>
+      </div>
+    </div>
+    <div class="card" style="margin-top:8px"><canvas id="prCanvas" width="640" height="300"></canvas></div>
+    <div id="prAlgo" class="kbd" style="margin-top:8px;display:none"></div>
+  </div>
+</section>
+</div>
+
+<script>
+/* ===== base ===== */
+const WCA_PUZZLES=["2x2","3x3","4x4","5x5","6x6","7x7","3x3 OH","Clock","Megaminx","Pyraminx","Skewb","Square-1","FMC"];
+const DEFAULT_PROFILE={name:"Profil 3x3",puzzle:"3x3",theme:"theme-night",times:[],colors:"default",trainer:[]};
+const Store={load(){try{return JSON.parse(localStorage.getItem("ctplus2"))||{profiles:[DEFAULT_PROFILE],active:0}}catch(e){return{profiles:[DEFAULT_PROFILE],active:0}}},save(){localStorage.setItem("ctplus2",JSON.stringify(state))}};
+let state=Store.load();
+
+/* ===== UI refs ===== */
+const $=s=>document.querySelector(s);
+const profileSelect=$("#profileSelect"), puzzleSelect=$("#puzzleSelect"), themeSelect=$("#themeSelect");
+const badgePuzzle=$("#badgePuzzle"), timerEl=$("#timer"), scrambleView=$("#scrambleView"), preview=$("#preview");
+const ctx=preview.getContext("2d"), timesTable=$("#timesTable tbody"), ao5El=$("#ao5"), ao12El=$("#ao12");
+const tabs=[...document.querySelectorAll(".tab")], timerTab=$("#timerTab"), trainerTab=$("#trainerTab");
+const trainerPuzzleLabel=$("#trainerPuzzleLabel"); const prCan=$("#prCanvas").getContext("2d");
+
+/* ===== helpers ===== */
+const rnd=n=>Math.floor(Math.random()*n); function last(a,n){return a.slice(-n)} function mean(a){return a.reduce((x,y)=>x+y,0)/a.length}
+const moveTokens=s=>s.trim().split(/\s+/).filter(Boolean); const format=t=>t.toFixed(3);
+function inverseMoves(seq){return moveTokens(seq).reverse().map(m=>m.endsWith("2")?m: m.endsWith("'")?m.replace("'",""):m+"'").join(" ");}
+
+/* ===== scramblers ===== */
+function scr2(len=11){const F=["U","R","F"],M=["","'","2"];let r=[],lf="";while(r.length<len){let f=F[rnd(3)];if(f===lf)continue;lf=f;r.push(f+M[rnd(3)])}return r.join(" ")}
+function scr3(len=20){const F=["U","D","L","R","F","B"],M=["","'","2"];let r=[],la="";const ax=f=>(f==="U"||f==="D")?"UD":(f==="L"||f==="R")?"LR":"FB";while(r.length<len){let f=F[rnd(6)];if(ax(f)===la)continue;la=ax(f);r.push(f+M[rnd(3)])}return r.join(" ")}
+function scrN(n){const B=["U","D","L","R","F","B"],M=["","'","2"],L=n>=4?["","w"]:[""];const len={4:40,5:60,6:80,7:100}[n]||60;let r=[],la="";const ax=f=>(/U|D/.test(f))?"UD":(/L|R/.test(f))?"LR":"FB";while(r.length<len){let f=B[rnd(6)]+L[rnd(L.length)];if(ax(f)===la)continue;la=ax(f);r.push(f+M[rnd(3)])}return r.join(" ")}
+function scrPy(len=11){const F=["U","L","R","B"],t=["u","l","r","b"],M=["","'"];let r=[];for(let i=0;i<len;i++)r.push(F[rnd(4)]+M[rnd(2)]);for(let x of t)r.push(x+M[rnd(2)]);return r.join(" ")}
+function scrSk(len=11){const F=["R","L","U","B"],M=["","'"];let r=[];for(let i=0;i<len;i++)r.push(F[rnd(4)]+M[rnd(2)]);return r.join(" ")}
+function scrMega(){const L=[];for(let i=0;i<7;i++)L.push(`${"R++ U-- ".repeat(5)}R++ U--`);L.push("U'");return L.join("\n")}
+function scrSq(){let r=[];for(let i=0;i<20;i++){let a=rnd(12)-5,b=rnd(12)-5;r.push(`(${a},${b}) /`)}return r.join(" ")}
+function scrClk(){const n=()=>rnd(6)-2,p=["UR","UL","DR","DL","U","R","D","L","ALL"];let r=p.map(x=>`${x} ${n()}`).join("  ");r+="  y2  "+p.map(x=>`${x} ${n()}`).join("  ");return r}
+function scrFMC(){return "— (FMC : pas de scramble fixe)";}
+function getScr(p){if(p==="2x2")return scr2(); if(p==="3x3")return scr3(); if(p==="4x4")return scrN(4); if(p==="5x5")return scrN(5);
+if(p==="6x6")return scrN(6); if(p==="7x7")return scrN(7); if(p==="Pyraminx")return scrPy(); if(p==="Skewb")return scrSk();
+if(p==="Megaminx")return scrMega(); if(p==="Square-1")return scrSq(); if(p==="Clock")return scrClk(); if(p==="FMC")return scrFMC(); if(p==="3x3 OH")return scr3();}
+
+/* ===== cube preview (2×2 & 3×3) ===== */
+const COLORS={U:"#fff",D:"#ffd600",F:"#34c759",B:"#007aff",R:"#ff3b30",L:"#ff9500"};
+function solved(n=3){const f=()=>Array.from({length:n},()=>Array(n).fill(0));return{U:f().map(r=>r.fill("U")),R:f().map(r=>r.fill("R")),F:f().map(r=>r.fill("F")),D:f().map(r=>r.fill("D")),L:f().map(r=>r.fill("L")),B:f().map(r=>r.fill("B")),n}}
+function rot(face,prime=false,double=false){const n=face.length,t=double?2:(prime?3:1);for(let k=0;k<t;k++){const m=Array.from({length:n},()=>Array(n));for(let i=0;i<n;i++)for(let j=0;j<n;j++)m[j][n-1-i]=face[i][j];for(let i=0;i<n;i++)for(let j=0;j<n;j++)face[i][j]=m[i][j];}}
+function mv3(c,mv){const n=c.n,pr=mv.endsWith("'"),dbl=mv.endsWith("2"),f=mv[0],times=dbl?2:1;for(let k=0;k<times;k++){if(f==="U"){rot(c.U,pr);let r=c.B[0];if(!pr){c.B[0]=c.R[0];c.R[0]=c.F[0];c.F[0]=c.L[0];c.L[0]=r}else{c.B[0]=c.L[0];c.L[0]=c.F[0];c.F[0]=c.R[0];c.R[0]=r}}
+else if(f==="D"){rot(c.D,!pr);let r=c.B[n-1];if(!pr){c.B[n-1]=c.L[n-1];c.L[n-1]=c.F[n-1];c.F[n-1]=c.R[n-1];c.R[n-1]=r}else{c.B[n-1]=c.R[n-1];c.R[n-1]=c.F[n-1];c.F[n-1]=c.L[n-1];c.L[n-1]=r}}
+else if(f==="R"){rot(c.R,pr);let u=c.U.map(r=>r[n-1]),f1=c.F.map(r=>r[n-1]),d=c.D.map(r=>r[n-1]),b=c.B.map(r=>r[0]).reverse();if(!pr){c.U.forEach((r,i)=>r[n-1]=b[i]);c.F.forEach((r,i)=>r[n-1]=u[i]);c.D.forEach((r,i)=>r[n-1]=f1[i]);c.B.forEach((r,i)=>r[0]=d[n-1-i])}else{c.U.forEach((r,i)=>r[n-1]=f1[i]);c.F.forEach((r,i)=>r[n-1]=d[i]);c.D.forEach((r,i)=>r[n-1]=b[n-1-i]);c.B.forEach((r,i)=>r[0]=u[n-1-i])}}
+else if(f==="L"){rot(c.L,!pr);let u=c.U.map(r=>r[0]),f1=c.F.map(r=>r[0]),d=c.D.map(r=>r[0]),b=c.B.map(r=>r[n-1]).reverse();if(!pr){c.U.forEach((r,i)=>r[0]=f1[i]);c.F.forEach((r,i)=>r[0]=d[i]);c.D.forEach((r,i)=>r[0]=b[n-1-i]);c.B.forEach((r,i)=>r[n-1]=u[n-1-i])}else{c.U.forEach((r,i)=>r[0]=b[i]);c.F.forEach((r,i)=>r[0]=u[i]);c.D.forEach((r,i)=>r[0]=f1[i]);c.B.forEach((r,i)=>r[n-1]=d[n-1-i])}}
+else if(f==="F"){rot(c.F,pr);let u=c.U[n-1].slice(),r=c.R.map(x=>x[0]),d=c.D[0].slice(),l=c.L.map(x=>x[n-1]);if(!pr){c.U[n-1]=l.reverse();c.R.forEach((x,i)=>x[0]=u[i]);c.D[0]=r.reverse();c.L.forEach((x,i)=>x[n-1]=d[i])}else{c.U[n-1]=r.slice().reverse();c.R.forEach((x,i)=>x[0]=d[i]);c.D[0]=l.slice().reverse();c.L.forEach((x,i)=>x[n-1]=u[i])}}
+else if(f==="B"){rot(c.B,!pr);let u=c.U[0].slice(),r=c.R.map(x=>x[n-1]),d=c.D[n-1].slice(),l=c.L.map(x=>x[0]);if(!pr){c.U[0]=r.reverse();c.R.forEach((x,i)=>x[n-1]=d[i]);c.D[n-1]=l.reverse();c.L.forEach((x,i)=>x[0]=u[i])}else{c.U[0]=l.slice().reverse();c.R.forEach((x,i)=>x[n-1]=u[i]);c.D[n-1]=r.slice().reverse();c.L.forEach((x,i)=>x[0]=d[i])}}}}
+function apply(scr,n){const c=solved(n);for(const m of moveTokens(scr)){const s=m.replace(/[^URFDLB2']/g,"");if(!s)continue;mv3(c,s)}return c}
+function drawNet(c,ctx,w=640,h=380){const n=c.n,s=16,p=4;ctx.clearRect(0,0,w,h);ctx.fillStyle="#0e121a";ctx.fillRect(0,0,w,h);const ox=40,oy=20;
+function face(F,x,y){for(let i=0;i<n;i++)for(let j=0;j<n;j++){ctx.fillStyle=COLORS[F[i][j]];ctx.strokeStyle="#000";ctx.fillRect(x+j*(s+p),y+i*(s+p),s,s);ctx.strokeRect(x+j*(s+p),y+i*(s+p),s,s)}}
+face(c.U,ox+(n*(s+p)),oy);face(c.L,ox,oy+(n*(s+p)));face(c.F,ox+(n*(s+p)),oy+(n*(s+p)));face(c.R,ox+2*(n*(s+p)),oy+(n*(s+p)));face(c.B,ox+3*(n*(s+p)),oy+(n*(s+p)));face(c.D,ox+(n*(s+p)),oy+2*(n*(s+p)));
+}
+
+/* ===== timer logic ===== */
+let running=false,startT=0,raf=null,currentScr="";
+function upd(){timerEl.textContent=format((performance.now()-startT)/1000);raf=requestAnimationFrame(upd)}
+function start(){if(running)return;running=true;startT=performance.now();raf=requestAnimationFrame(upd)}
+function stop(finalize=true){if(!running)return;running=false;cancelAnimationFrame(raf);if(finalize){const t=parseFloat(timerEl.textContent);addTime(t,currentScr)}}
+function reset(){stop(false);timerEl.textContent="0.000"}
+function addTime(t,scr){const p=state.profiles[state.active];p.times.push({t,scr,d:new Date().toISOString(),dnf:false,plus2:false});renderTimes();Store.save()}
+function aon(n){const p=state.profiles[state.active];const arr=p.times.map(x=>x.dnf?Infinity:(x.plus2?x.t+2:x.t));if(arr.length<n)return"—";const lastN=arr.slice(-n);const k=Math.floor(n*0.05);const s=lastN.slice().sort((a,b)=>a-b).slice(k,lastN.length-k);if(s.some(x=>x===Infinity))return"DNF";return format(mean(s))}
+
+/* ===== render ===== */
+function renderProfiles(){profileSelect.innerHTML="";state.profiles.forEach((p,i)=>{const o=document.createElement("option");o.value=i;o.textContent=`${p.name} — ${p.puzzle}`;profileSelect.appendChild(o)});profileSelect.value=state.active}
+function renderPuzzleOptions(){puzzleSelect.innerHTML="";WCA_PUZZLES.forEach(p=>{const o=document.createElement("option");o.value=p;o.textContent=p;puzzleSelect.appendChild(o)})}
+function renderTheme(){document.body.className=state.profiles[state.active].theme;themeSelect.value=document.body.className}
+function renderScr(scr){scrambleView.innerHTML="";scr.split(/\s+/).forEach(t=>{const s=document.createElement("span");s.className="chip";s.textContent=t;scrambleView.appendChild(s)})}
+function newScramble(){const p=state.profiles[state.active].puzzle;currentScr=getScr(p);renderScr(currentScr);badgePuzzle.textContent=p; if(p==="2x2"||p==="3x3"){const n=p==="2x2"?2:3;drawNet(apply(currentScr,n),ctx,preview.width,preview.height)}else{ctx.clearRect(0,0,preview.width,preview.height);ctx.fillStyle="#0e121a";ctx.fillRect(0,0,preview.width,preview.height);ctx.fillStyle="#6b7280";ctx.font="16px ui-monospace";ctx.fillText("Aperçu graphique: 2×2 & 3×3 (OK).",18,32);ctx.fillText("Les autres puzzles affichent le scramble correct ci-dessus.",18,56)}}
+function renderTimes(){const p=state.profiles[state.active];timesTable.innerHTML="";p.times.slice().reverse().forEach((it,idx)=>{const tr=document.createElement("tr");const n=p.times.length-idx;const ts=it.dnf?"DNF":format(it.t+(it.plus2?2:0))+(it.plus2?" (+2)":"");tr.innerHTML=`<td>${n}</td><td>${ts}</td><td class="muted">${it.scr.replace(/\n/g," ")}</td><td class="right"><button data-act="plus2" data-i="${p.times.length-idx-1}">+2</button><button data-act="dnf" data-i="${p.times.length-idx-1}">DNF</button><button data-act="del" data-i="${p.times.length-idx-1}">Suppr</button></td>`;timesTable.appendChild(tr)});ao5El.textContent=aon(5);ao12El.textContent=aon(12)}
+
+/* ===== trainer ===== */
+function renderTrainerList(){const list=$("#algList");list.innerHTML="";const prof=state.profiles[state.active];trainerPuzzleLabel.textContent=prof.puzzle;prof.trainer.forEach((a,i)=>{const div=document.createElement("div");div.className="alg";div.innerHTML=`<div><div><b>${a.name}</b> — <span class="kbd">${a.moves}</span></div><div class="meta">Scramble: <span class="kbd">${a.scramble}</span> • Tries: ${a.tries||0} • Success: ${a.success||0} (${a.tries?Math.round(100*(a.success||0)/(a.tries||1)):0}%)</div></div><div class="row"><button data-i="${i}" data-a="practice">Practice</button><button data-i="${i}" data-a="edit">Éditer</button><button data-i="${i}" data-a="del">Suppr</button></div>`;list.appendChild(div)})}
+function addAlg(){const name=$("#algName").value.trim(), moves=$("#algMoves").value.trim(), scr=$("#algScramble").value.trim();if(!name||!moves){alert("Nom + algorithme requis");return}const prof=state.profiles[state.active];const scramble = scr || inverseMoves(moves);prof.trainer.push({name,moves,scramble,tries:0,success:0});$("#algName").value=$("#algMoves").value=$("#algScramble").value="";Store.save();renderTrainerList()}
+$("#btnAddAlg").onclick=addAlg;
+$("#algList").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const i=+b.dataset.i;const act=b.dataset.a;const prof=state.profiles[state.active];if(act==="del"){prof.trainer.splice(i,1)}else if(act==="edit"){const a=prof.trainer[i];const name=prompt("Nom ?",a.name)||a.name;const moves=prompt("Algorithme ?",a.moves)||a.moves;const scr=prompt("Scramble (vide = inverse algo)",a.scramble)||inverseMoves(moves);prof.trainer[i]={...a,name,moves,scramble:scr}}else if(act==="practice"){launchPractice(i)}Store.save();renderTrainerList()});
+
+let prIndex=null;
+function launchPractice(i=null){const prof=state.profiles[state.active];if(prof.trainer.length===0){alert("Ajoute au moins un algo.");return}prIndex=(i==null)?rnd(prof.trainer.length):i;const a=prof.trainer[prIndex];$("#practiceCard").style.display="block";$("#prTitle").textContent=`${a.name} — ${prof.puzzle}`;renderPrScramble(a.scramble,prof.puzzle);$("#prAlgo").style.display="none";$("#prAlgo").textContent=a.moves}
+function renderPrScramble(scr,puz){const w=640,h=300;$("#prScramble").innerHTML="";scr.split(/\s+/).forEach(t=>{const s=document.createElement("span");s.className="chip";s.textContent=t;$("#prScramble").appendChild(s)});prCan.clearRect(0,0,w,h);prCan.fillStyle="#0e121a";prCan.fillRect(0,0,w,h); if(puz==="2x2"||puz==="3x3"){const n=(puz==="2x2")?2:3;drawNet(apply(scr,n),prCan,w,h)}else{prCan.fillStyle="#6b7280";prCan.font="16px ui-monospace";prCan.fillText("Aperçu exact dispo pour 2×2/3×3. Ici: scramble affiché.",18,36)}}
+$("#btnPractice").onclick=()=>launchPractice();
+$("#btnReveal").onclick=()=>{$("#prAlgo").style.display="block"};
+$("#btnNext").onclick=()=>launchPractice();
+$("#btnSuccess").onclick=()=>updateSF(true);
+$("#btnFail").onclick=()=>updateSF(false);
+function updateSF(ok){const prof=state.profiles[state.active];if(prIndex==null) return;prof.trainer[prIndex].tries=(prof.trainer[prIndex].tries||0)+1;if(ok) prof.trainer[prIndex].success=(prof.trainer[prIndex].success||0)+1;Store.save();renderTrainerList()}
+
+/* ===== events ===== */
+document.addEventListener("keydown",e=>{if(e.code==="Space"){e.preventDefault();running?stop():start()} if(e.code==="Delete"||e.code==="Backspace"){const p=state.profiles[state.active];p.times.pop();Store.save();renderTimes()}})
+$("#startStop").onclick=()=>running?stop():start(); $("#btnReset").onclick=reset; $("#btnNewScramble").onclick=()=>{newScramble();reset()};
+$("#btnDNF").onclick=()=>{const p=state.profiles[state.active];if(!p.times.length)return;p.times[p.times.length-1].dnf=!p.times[p.times.length-1].dnf;Store.save();renderTimes()}
+$("#btnPlus2").onclick=()=>{const p=state.profiles[state.active];if(!p.times.length)return;const t=p.times[p.times.length-1];t.plus2=!t.plus2;Store.save();renderTimes()}
+
+$("#btnNewProfile").onclick=()=>{const name=prompt("Nom du profil ?","Profil");if(!name)return;const puzzle=prompt("Puzzle WCA ? (ex: 3x3, 2x2, Skewb, ... )","3x3");const theme=prompt("Thème (theme-night, theme-default, theme-aqua, theme-solar, theme-neon)","theme-night");state.profiles.push({name,puzzle:(WCA_PUZZLES.includes(puzzle)?puzzle:"3x3"),theme,times:[],colors:"default",trainer:[]});state.active=state.profiles.length-1;Store.save();renderProfiles();loadProfile()}
+profileSelect.onchange=()=>{state.active=parseInt(profileSelect.value);Store.save();loadProfile()}
+puzzleSelect.onchange=()=>{state.profiles[state.active].puzzle=puzzleSelect.value;Store.save();badgePuzzle.textContent=puzzleSelect.value;trainerPuzzleLabel.textContent=puzzleSelect.value;newScramble()}
+themeSelect.onchange=()=>{state.profiles[state.active].theme=themeSelect.value;Store.save();renderTheme()}
+$("#timesTable").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const i=parseInt(b.dataset.i);const act=b.dataset.act;const p=state.profiles[state.active];if(act==="del")p.times.splice(i,1);if(act==="dnf")p.times[i].dnf=!p.times[i].dnf;if(act==="+2"||act==="plus2")p.times[i].plus2=!p.times[i].plus2;Store.save();renderTimes()})
+
+$("#btnExport").onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="cubetimer_plus.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),800)}
+$("#btnImport").onclick=()=>$("#importFile").click();
+$("#importFile").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{state=JSON.parse(r.result);Store.save();init()}catch(err){alert("Fichier invalide")}};r.readAsText(f)}
+
+tabs.forEach(t=>t.onclick=()=>{tabs.forEach(x=>x.classList.remove("active"));t.classList.add("active");timerTab.style.display=(t.dataset.tab==="timerTab")?"block":"none";trainerTab.style.display=(t.dataset.tab==="trainerTab")?"block":"none"})
+
+/* ===== init ===== */
+function loadProfile(){renderTheme();renderPuzzleOptions();puzzleSelect.value=state.profiles[state.active].puzzle;badgePuzzle.textContent=state.profiles[state.active].puzzle;trainerPuzzleLabel.textContent=state.profiles[state.active].puzzle;renderTimes();newScramble();renderTrainerList()}
+function init(){renderProfiles();loadProfile()} init();
+</script>
+</body></html>
